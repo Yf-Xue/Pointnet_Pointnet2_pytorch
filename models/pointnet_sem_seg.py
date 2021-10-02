@@ -7,10 +7,10 @@ from pointnet_utils import PointNetEncoder, feature_transform_reguliarzer
 
 
 class get_model(nn.Module):
-    def __init__(self, num_class):
+    def __init__(self, num_class, num_feature):
         super(get_model, self).__init__()
         self.k = num_class
-        self.feat = PointNetEncoder(global_feat=False, feature_transform=True, channel=9)
+        self.feat = PointNetEncoder(global_feat=False, feature_transform=True, channel=num_feature)
         self.conv1 = torch.nn.Conv1d(1088, 512, 1)
         self.conv2 = torch.nn.Conv1d(512, 256, 1)
         self.conv3 = torch.nn.Conv1d(256, 128, 1)

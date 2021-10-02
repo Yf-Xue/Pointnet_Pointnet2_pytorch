@@ -45,6 +45,7 @@ def parse_args():
     parser.add_argument('--log_dir', type=str, default=None, help='Log path [default: None]')
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='weight decay [default: 1e-4]')
     parser.add_argument('--npoint', type=int, default=4096, help='Point Number [default: 4096]')
+    parser.add_argument('--nanchor', type=int, default=128, help='Anchor Number [default: 128]')
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
     parser.add_argument('--lr_decay', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
     parser.add_argument('--test_area', type=int, default=5, help='Which area to use for test, option: 1-6 [default: 5]')
@@ -108,12 +109,20 @@ def main(args):
     log_string("The number of training data is: %d" % len(TRAIN_DATASET))
     log_string("The number of test data is: %d" % len(TEST_DATASET))
 
+    '''ANCHORS SETTING'''
+    NUM_ANCHORS = args.nanchor
+    anchors_size = (NUM_ANCHORS, 3)
+    np.random.seed = 49
+    anchors = np.random.random(anchors_size)
+    anchors = torch.Tensor(anchors)
+    anchors = anchors.float().cuda()
+
     '''MODEL LOADING'''
     MODEL = importlib.import_module(args.model)
     shutil.copy('models/%s.py' % args.model, str(experiment_dir))
     shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
 
-    classifier = MODEL.get_model(NUM_CLASSES).cuda()
+    classifier = MODEL.get_model(NUM_CLASSES, NUM_ANCHORS + 3).cuda()
     criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
 
@@ -151,19 +160,18 @@ def main(args):
         if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
             m.momentum = momentum
     
-    def convex_dist(points1, points2, bsize, M=100):
+    def convex_dist(points1, points2, pcd, M=100):
         """
         Args:
             points1 - BxSx3 
             points2 - BxSx3
-            bsize - batch size N
             pcd - BxNx3
 
         Rets：
             cdist - BxS
         """
         assert(points1.shape[1]==points2.shape[1])
-        B, S, N = points1.shape[0], points1.shape[1], bsize
+        B, S, N = points1.shape[0], points1.shape[1], pcd.shape[1]
         dist = torch.norm(points2 - points1, dim=-1, keepdim=True) #BxSx1
         n = (points2 - points1) / dist #BxSx3
         positions = (torch.arange(0, M) / (M-1))[None, None, :, None].expand(B, S, -1, 1).to(points1.device) #BxSxMx1
@@ -176,6 +184,23 @@ def main(args):
         nn_dist = nn_dist.view(B, S, M, 1)
         cdist = torch.sqrt(torch.amax(nn_dist.squeeze(-1), dim=-1)) #BxS
         return cdist
+    def nn_convex_dist(points1, points2, pcd, M=100):
+        """
+        Args:
+            points1 - BxS_1x3
+            points2 - BxS_2x3
+            pcd - BxNx3
+
+        Rets:
+            dists_1 - BxS_1
+            dists_2 - BxS_2
+        """
+        B, S1, S2 = points1.shape[0], points1.shape[1], points2.shape[1]
+        pp1 = points1[:, :, None, :].expand(-1, -1, S2, -1).reshape(B, -1 ,3) #BxS1S2x3
+        pp2 = points2[:, None, :, :].expand(-1, S1, -1, -1).reshape(B, -1 ,3) #BxS1S2x3
+        cdists = convex_dist(pp1, pp2, pcd).view(B, S1, -1) #BxS1xS2
+        # dists_1, dists_2 = cdists.amin(dim=-1), cdists.amin(dim=-1)
+        return cdists
 
     LEARNING_RATE_CLIP = 1e-5
     MOMENTUM_ORIGINAL = 0.1
@@ -184,12 +209,6 @@ def main(args):
 
     global_epoch = 0
     best_iou = 0
-    # set up anchors
-    anchors_size = (128, 3)
-    np.random.seed = 49
-    anchors = np.random.random(anchors_size)
-    anchors = torch.Tensor(anchors)
-    anchors = anchors.float().cuda()
 
     for epoch in range(start_epoch, args.epoch):
         '''Train on chopped scenes'''
@@ -216,7 +235,8 @@ def main(args):
             points = points.data.numpy()
             points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
             points = torch.Tensor(points)
-            points = convex_dist(points, anchors, BATCH_SIZE, M=100)
+            c_distance = nn_convex_dist(points, anchors, points, M=100) # B*N*num_anchors
+            points = torch.cat((points, c_distance), 2) # B*N*(3 + num_anchors)
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
 
