@@ -94,9 +94,9 @@ def main(args):
     BATCH_SIZE = args.batch_size
 
     print("start loading training data ...")
-    TRAIN_DATASET = S3DISDataset(split='train', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None)
+    TRAIN_DATASET = S3DISDataset(split='train', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None, bs=BATCH_SIZE)
     print("start loading test data ...")
-    TEST_DATASET = S3DISDataset(split='test', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None)
+    TEST_DATASET = S3DISDataset(split='test', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None, bs=BATCH_SIZE)
 
     trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=10,
                                                   pin_memory=True, drop_last=True,
@@ -150,6 +150,32 @@ def main(args):
     def bn_momentum_adjust(m, momentum):
         if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
             m.momentum = momentum
+    
+    def convex_dist(points1, points2, bsize, M=100):
+        """
+        Args:
+            points1 - BxSx3 
+            points2 - BxSx3
+            bsize - batch size N
+            pcd - BxNx3
+
+        Rets：
+            cdist - BxS
+        """
+        assert(points1.shape[1]==points2.shape[1])
+        B, S, N = points1.shape[0], points1.shape[1], bsize
+        dist = torch.norm(points2 - points1, dim=-1, keepdim=True) #BxSx1
+        n = (points2 - points1) / dist #BxSx3
+        positions = (torch.arange(0, M) / (M-1))[None, None, :, None].expand(B, S, -1, 1).to(points1.device) #BxSxMx1
+        dd = dist[:, :, None, :].expand(-1, -1, M, -1) #BxSxMx1
+        nn = n[:, :, None, :].expand(-1, -1, M, -1) #BxSxMx3
+        pp1 = points1[:, :, None, :].expand(-1, -1, M, -1) #BxSxMx3
+        sampled_points = pp1 + nn * dd * positions #BxSxMx3
+        pp = pcd[:, None, :, :].expand(-1, S, -1, -1) #BxSxNx3
+        nn_dist, _, _= ops.knn_points(sampled_points.reshape(B*S, M, 3), pp.reshape(B*S, N, 3))
+        nn_dist = nn_dist.view(B, S, M, 1)
+        cdist = torch.sqrt(torch.amax(nn_dist.squeeze(-1), dim=-1)) #BxS
+        return cdist
 
     LEARNING_RATE_CLIP = 1e-5
     MOMENTUM_ORIGINAL = 0.1
@@ -158,6 +184,12 @@ def main(args):
 
     global_epoch = 0
     best_iou = 0
+    # set up anchors
+    anchors_size = (128, 3)
+    np.random.seed = 49
+    anchors = np.random.random(anchors_size)
+    anchors = torch.Tensor(anchors)
+    anchors = anchors.float().cuda()
 
     for epoch in range(start_epoch, args.epoch):
         '''Train on chopped scenes'''
@@ -178,11 +210,13 @@ def main(args):
         classifier = classifier.train()
 
         for i, (points, target) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
+            cdist = convex_dis
             optimizer.zero_grad()
 
             points = points.data.numpy()
             points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
             points = torch.Tensor(points)
+            points = convex_dist(points, anchors, BATCH_SIZE, M=100)
             points, target = points.float().cuda(), target.long().cuda()
             points = points.transpose(2, 1)
 

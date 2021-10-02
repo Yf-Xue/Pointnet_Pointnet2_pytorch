@@ -6,11 +6,25 @@ from torch.utils.data import Dataset
 
 
 class S3DISDataset(Dataset):
-    def __init__(self, split='train', data_root='trainval_fullarea', num_point=4096, test_area=5, block_size=1.0, sample_rate=1.0, transform=None):
+    def __init__(self, split='train', data_root='trainval_fullarea', num_point=4096, test_area=5, block_size=1.0, sample_rate=1.0, transform=None, , bs=16):
         super().__init__()
         self.num_point = num_point
         self.block_size = block_size
         self.transform = transform
+        self.batch_size = bs
+        self.anchors = [] # 随机观察点
+        self.global_max = 0.0
+
+        if anchors_type == 1:  # case 1: anchors are fixed 128
+            anchors_size = (128, 3)
+            # np.random.seed = 49
+            self.anchors = np.random.random(anchors_size)
+        # TODO: FIX THESE TWO PART
+        elif anchors_type == 2:  # case 2: anchors are learnable
+            continue
+        elif anchors_type == 3:  # case 3: anchors are proposed??
+            continue
+            
         rooms = sorted(os.listdir(data_root))
         rooms = [room for room in rooms if 'Area_' in room]
         if split == 'train':
@@ -33,6 +47,7 @@ class S3DISDataset(Dataset):
             self.room_points.append(points), self.room_labels.append(labels)
             self.room_coord_min.append(coord_min), self.room_coord_max.append(coord_max)
             num_point_all.append(labels.size)
+        self.room_coord_max_xyz = np.amax(self.room_coord_max, axis=1)
         labelweights = labelweights.astype(np.float32)
         labelweights = labelweights / np.sum(labelweights)
         self.labelweights = np.power(np.amax(labelweights) / labelweights, 1 / 3.0)
@@ -44,6 +59,32 @@ class S3DISDataset(Dataset):
             room_idxs.extend([index] * int(round(sample_prob[index] * num_iter)))
         self.room_idxs = np.array(room_idxs)
         print("Totally {} samples in {} set.".format(len(self.room_idxs), split))
+    # TODO: 不能放在这里计算
+    # def convex_dist(self, points1, points2, bsize, M=100):
+    #     """
+    #     Args:
+    #         points1 - BxSx3 
+    #         points2 - BxSx3
+    #         bsize - batch size N
+    #         pcd - BxNx3
+
+    #     Rets：
+    #         cdist - BxS
+    #     """
+    #     assert(points1.shape[1]==points2.shape[1])
+    #     B, S, N = points1.shape[0], points1.shape[1], bsize
+    #     dist = torch.norm(points2 - points1, dim=-1, keepdim=True) #BxSx1
+    #     n = (points2 - points1) / dist #BxSx3
+    #     positions = (torch.arange(0, M) / (M-1))[None, None, :, None].expand(B, S, -1, 1).to(points1.device) #BxSxMx1
+    #     dd = dist[:, :, None, :].expand(-1, -1, M, -1) #BxSxMx1
+    #     nn = n[:, :, None, :].expand(-1, -1, M, -1) #BxSxMx3
+    #     pp1 = points1[:, :, None, :].expand(-1, -1, M, -1) #BxSxMx3
+    #     sampled_points = pp1 + nn * dd * positions #BxSxMx3
+    #     pp = pcd[:, None, :, :].expand(-1, S, -1, -1) #BxSxNx3
+    #     nn_dist, _, _= ops.knn_points(sampled_points.reshape(B*S, M, 3), pp.reshape(B*S, N, 3))
+    #     nn_dist = nn_dist.view(B, S, M, 1)
+    #     cdist = torch.sqrt(torch.amax(nn_dist.squeeze(-1), dim=-1)) #BxS
+    #     return cdist
 
     def __getitem__(self, idx):
         room_idx = self.room_idxs[idx]
@@ -51,36 +92,58 @@ class S3DISDataset(Dataset):
         labels = self.room_labels[room_idx]   # N
         N_points = points.shape[0]
 
-        while (True):
-            center = points[np.random.choice(N_points)][:3]
-            block_min = center - [self.block_size / 2.0, self.block_size / 2.0, 0]
-            block_max = center + [self.block_size / 2.0, self.block_size / 2.0, 0]
-            point_idxs = np.where((points[:, 0] >= block_min[0]) & (points[:, 0] <= block_max[0]) & (points[:, 1] >= block_min[1]) & (points[:, 1] <= block_max[1]))[0]
-            if point_idxs.size > 1024:
-                break
-
-        if point_idxs.size >= self.num_point:
-            selected_point_idxs = np.random.choice(point_idxs, self.num_point, replace=False)
+        # 随机降采样
+        if self.num_points > N_points:
+            selected_point_idxs = np.random.choice(N_points, self.num_points, replace=True) # 随机降采样
         else:
-            selected_point_idxs = np.random.choice(point_idxs, self.num_point, replace=True)
-
+            selected_point_idxs = np.random.choice(N_points, self.num_points, replace=False)
         # normalize
-        selected_points = points[selected_point_idxs, :]  # num_point * 6
-        current_points = np.zeros((self.num_point, 9))  # num_point * 9
-        current_points[:, 6] = selected_points[:, 0] / self.room_coord_max[room_idx][0]
-        current_points[:, 7] = selected_points[:, 1] / self.room_coord_max[room_idx][1]
-        current_points[:, 8] = selected_points[:, 2] / self.room_coord_max[room_idx][2]
-        selected_points[:, 0] = selected_points[:, 0] - center[0]
-        selected_points[:, 1] = selected_points[:, 1] - center[1]
-        selected_points[:, 3:6] /= 255.0
-        current_points[:, 0:6] = selected_points
+        selected_points = points[selected_point_idxs, :3]  # num_point * 3: xyz
+        current_points = np.zeros((self.num_points, 3))
+        room_coord_max_global = np.amax(self.room_coord_max[room_idx], axis=1)
+        current_points[:, 0] = selected_points[:, 0] / self.room_coord_max_xyz[room_idx]
+        current_points[:, 1] = selected_points[:, 1] / self.room_coord_max_xyz[room_idx]
+        current_points[:, 2] = selected_points[:, 2] / self.room_coord_max_xyz[room_idx]      
         current_labels = labels[selected_point_idxs]
-        if self.transform is not None:
-            current_points, current_labels = self.transform(current_points, current_labels)
+
+        # points + convex_feature
+        # current_cdist = convex_dist(current_points, self.anchors, self.batch_size, M=100)
+        current_points = np.concatenate((current_points, current_cdist), axis=-1)
         return current_points, current_labels
 
     def __len__(self):
         return len(self.room_idxs)
+
+        # # 取一个随机中心xy范围内的点
+        # while (True):
+        #     center = points[np.random.choice(N_points)][:3]
+        #     block_min = center - [self.block_size / 2.0, self.block_size / 2.0, 0]
+        #     block_max = center + [self.block_size / 2.0, self.block_size / 2.0, 0]
+        #     point_idxs = np.where((points[:, 0] >= block_min[0]) & (points[:, 0] <= block_max[0]) & (points[:, 1] >= block_min[1]) & (points[:, 1] <= block_max[1]))[0]
+        #     if point_idxs.size > 1024:
+        #         break
+        # # 处理为目标数量
+        # if point_idxs.size >= self.num_point:
+        #     selected_point_idxs = np.random.choice(point_idxs, self.num_point, replace=False)
+        # else:
+        #     selected_point_idxs = np.random.choice(point_idxs, self.num_point, replace=True)
+
+        # normalize
+        # selected_points = points[selected_point_idxs, :]  # num_point * 6
+        # current_points = np.zeros((self.num_point, 9))  # num_point * 9
+        # current_points[:, 6] = selected_points[:, 0] / self.room_coord_max[room_idx][0]   # 原始位置
+        # current_points[:, 7] = selected_points[:, 1] / self.room_coord_max[room_idx][1]
+        # current_points[:, 8] = selected_points[:, 2] / self.room_coord_max[room_idx][2]
+        # selected_points[:, 0] = selected_points[:, 0] - center[0] # 相对中心位置
+        # selected_points[:, 1] = selected_points[:, 1] - center[1]
+        # selected_points[:, 3:6] /= 255.0
+        # current_points[:, 0:6] = selected_points
+        # current_labels = labels[selected_point_idxs]
+        # if self.transform is not None:
+        #     current_points, current_labels = self.transform(current_points, current_labels)  # 对应传入的某种变换
+
+        # return current_points, current_labels
+
 
 class ScannetDatasetWholeScene():
     # prepare to give prediction on each points
@@ -107,6 +170,7 @@ class ScannetDatasetWholeScene():
             self.semantic_labels_list.append(data[:, 6])
             coord_min, coord_max = np.amin(points, axis=0)[:3], np.amax(points, axis=0)[:3]
             self.room_coord_min.append(coord_min), self.room_coord_max.append(coord_max)
+        self.room_coord_max_xyz = np.amax(self.room_coord_max, axis=1)
         assert len(self.scene_points_list) == len(self.semantic_labels_list)
 
         labelweights = np.zeros(13)
@@ -123,52 +187,78 @@ class ScannetDatasetWholeScene():
         points = point_set_ini[:,:6]
         labels = self.semantic_labels_list[index]
         coord_min, coord_max = np.amin(points, axis=0)[:3], np.amax(points, axis=0)[:3]
-        grid_x = int(np.ceil(float(coord_max[0] - coord_min[0] - self.block_size) / self.stride) + 1)
-        grid_y = int(np.ceil(float(coord_max[1] - coord_min[1] - self.block_size) / self.stride) + 1)
+        # grid_x = int(np.ceil(float(coord_max[0] - coord_min[0] - self.block_size) / self.stride) + 1)
+        # grid_y = int(np.ceil(float(coord_max[1] - coord_min[1] - self.block_size) / self.stride) + 1)
         data_room, label_room, sample_weight, index_room = np.array([]), np.array([]), np.array([]),  np.array([])
-        for index_y in range(0, grid_y):
-            for index_x in range(0, grid_x):
-                s_x = coord_min[0] + index_x * self.stride
-                e_x = min(s_x + self.block_size, coord_max[0])
-                s_x = e_x - self.block_size
-                s_y = coord_min[1] + index_y * self.stride
-                e_y = min(s_y + self.block_size, coord_max[1])
-                s_y = e_y - self.block_size
-                point_idxs = np.where(
-                    (points[:, 0] >= s_x - self.padding) & (points[:, 0] <= e_x + self.padding) & (points[:, 1] >= s_y - self.padding) & (
-                                points[:, 1] <= e_y + self.padding))[0]
-                if point_idxs.size == 0:
-                    continue
-                num_batch = int(np.ceil(point_idxs.size / self.block_points))
-                point_size = int(num_batch * self.block_points)
-                replace = False if (point_size - point_idxs.size <= point_idxs.size) else True
-                point_idxs_repeat = np.random.choice(point_idxs, point_size - point_idxs.size, replace=replace)
-                point_idxs = np.concatenate((point_idxs, point_idxs_repeat))
-                np.random.shuffle(point_idxs)
-                data_batch = points[point_idxs, :]
-                normlized_xyz = np.zeros((point_size, 3))
-                normlized_xyz[:, 0] = data_batch[:, 0] / coord_max[0]
-                normlized_xyz[:, 1] = data_batch[:, 1] / coord_max[1]
-                normlized_xyz[:, 2] = data_batch[:, 2] / coord_max[2]
-                data_batch[:, 0] = data_batch[:, 0] - (s_x + self.block_size / 2.0)
-                data_batch[:, 1] = data_batch[:, 1] - (s_y + self.block_size / 2.0)
-                data_batch[:, 3:6] /= 255.0
-                data_batch = np.concatenate((data_batch, normlized_xyz), axis=1)
-                label_batch = labels[point_idxs].astype(int)
-                batch_weight = self.labelweights[label_batch]
+        N_points = points.shape[0]
 
-                data_room = np.vstack([data_room, data_batch]) if data_room.size else data_batch
-                label_room = np.hstack([label_room, label_batch]) if label_room.size else label_batch
-                sample_weight = np.hstack([sample_weight, batch_weight]) if label_room.size else batch_weight
-                index_room = np.hstack([index_room, point_idxs]) if index_room.size else point_idxs
-        data_room = data_room.reshape((-1, self.block_points, data_room.shape[1]))
+        # 随机降采样
+        if self.num_points > N_points:
+            selected_point_idxs = np.random.choice(N_points, self.num_points, replace=True) # 随机降采样
+        else:
+            selected_point_idxs = np.random.choice(N_points, self.num_points, replace=False)
+        # normalize
+        selected_points = points[selected_point_idxs, :3]  # num_point * 3: xyz
+        normlized_xyz = np.zeros((point_size, 3))
+        coord_max_xyz = np.amax(coord_max, axis=1)
+        normlized_xyz[:, 0] = selected_points[:, 0] / coord_max_xyz
+        normlized_xyz[:, 1] = selected_points[:, 1] / coord_max_xyz
+        normlized_xyz[:, 2] = selected_points[:, 2] / coord_max_xyz
+        label_room = labels[selected_point_idxs].astype(int)
+        sample_weight = self.labelweights[label_room]
+
+        data_room = normlized_xyz.reshape((-1, self.block_points, normlized_xyz.shape[1]))
         label_room = label_room.reshape((-1, self.block_points))
         sample_weight = sample_weight.reshape((-1, self.block_points))
-        index_room = index_room.reshape((-1, self.block_points))
+        index_room = selected_point_idxs.reshape((-1, self.block_points))
         return data_room, label_room, sample_weight, index_room
 
     def __len__(self):
         return len(self.scene_points_list)
+
+        # for index_y in range(0, grid_y):
+        #     for index_x in range(0, grid_x):
+        #         s_x = coord_min[0] + index_x * self.stride
+        #         e_x = min(s_x + self.block_size, coord_max[0])
+        #         s_x = e_x - self.block_size
+        #         s_y = coord_min[1] + index_y * self.stride
+        #         e_y = min(s_y + self.block_size, coord_max[1])
+        #         s_y = e_y - self.block_size
+        #         point_idxs = np.where(
+        #             (points[:, 0] >= s_x - self.padding) & (points[:, 0] <= e_x + self.padding) & (points[:, 1] >= s_y - self.padding) & (
+        #                         points[:, 1] <= e_y + self.padding))[0]
+        #         if point_idxs.size == 0:
+        #             continue
+        #         num_batch = int(np.ceil(point_idxs.size / self.block_points))
+        #         point_size = int(num_batch * self.block_points)
+                # replace = False if (point_size - point_idxs.size <= point_idxs.size) else True
+                # point_idxs_repeat = np.random.choice(point_idxs, point_size - point_idxs.size, replace=replace)
+                # point_idxs = np.concatenate((point_idxs, point_idxs_repeat))
+                # np.random.shuffle(point_idxs)
+                # data_batch = points[point_idxs, :]
+
+                # normlized_xyz = np.zeros((point_size, 3))
+                # normlized_xyz[:, 0] = data_batch[:, 0] / coord_max[0]
+                # normlized_xyz[:, 1] = data_batch[:, 1] / coord_max[1]
+                # normlized_xyz[:, 2] = data_batch[:, 2] / coord_max[2]
+                # data_batch[:, 0] = data_batch[:, 0] - (s_x + self.block_size / 2.0)
+                # data_batch[:, 1] = data_batch[:, 1] - (s_y + self.block_size / 2.0)
+                # data_batch[:, 3:6] /= 255.0
+                # data_batch = np.concatenate((data_batch, normlized_xyz), axis=1)
+
+        #         label_batch = labels[point_idxs].astype(int)
+        #         batch_weight = self.labelweights[label_batch]
+
+        #         data_room = np.vstack([data_room, data_batch]) if data_room.size else data_batch
+        #         label_room = np.hstack([label_room, label_batch]) if label_room.size else label_batch
+        #         sample_weight = np.hstack([sample_weight, batch_weight]) if label_room.size else batch_weight
+        #         index_room = np.hstack([index_room, point_idxs]) if index_room.size else point_idxs
+        # data_room = data_room.reshape((-1, self.block_points, data_room.shape[1]))
+        # label_room = label_room.reshape((-1, self.block_points))
+        # sample_weight = sample_weight.reshape((-1, self.block_points))
+        # index_room = index_room.reshape((-1, self.block_points))
+        # return data_room, label_room, sample_weight, index_room
+
 
 if __name__ == '__main__':
     data_root = '/data/yxu/PointNonLocal/data/stanford_indoor3d/'
