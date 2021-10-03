@@ -1,0 +1,139 @@
+2021-10-03 11:46:00,795 - Model - INFO - PARAMETER ...
+2021-10-03 11:46:00,796 - Model - INFO - Namespace(batch_size=16, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=4096, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 11:47:20,839 - Model - INFO - PARAMETER ...
+2021-10-03 11:47:20,840 - Model - INFO - Namespace(batch_size=16, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=4096, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 11:49:05,197 - Model - INFO - The number of training data is: 47623
+2021-10-03 11:49:05,197 - Model - INFO - The number of test data is: 18378
+2021-10-03 11:49:05,470 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 11:49:05,497 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 11:49:05,497 - Model - INFO - Learning rate:0.001000
+2021-10-03 11:50:51,523 - Model - INFO - PARAMETER ...
+2021-10-03 11:50:51,523 - Model - INFO - Namespace(batch_size=16, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 11:51:23,453 - Model - INFO - The number of training data is: 9750
+2021-10-03 11:51:23,453 - Model - INFO - The number of test data is: 3762
+2021-10-03 11:51:23,543 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 11:51:23,544 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 11:51:23,544 - Model - INFO - Learning rate:0.001000
+2021-10-03 11:53:41,603 - Model - INFO - PARAMETER ...
+2021-10-03 11:53:41,603 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 11:54:16,063 - Model - INFO - The number of training data is: 9750
+2021-10-03 11:54:16,063 - Model - INFO - The number of test data is: 3762
+2021-10-03 11:54:16,116 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 11:54:16,116 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 11:54:16,116 - Model - INFO - Learning rate:0.001000
+2021-10-03 11:55:38,433 - Model - INFO - PARAMETER ...
+2021-10-03 11:55:38,433 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 11:56:06,168 - Model - INFO - The number of training data is: 9750
+2021-10-03 11:56:06,168 - Model - INFO - The number of test data is: 3762
+2021-10-03 11:56:06,223 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 11:56:06,223 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 11:56:06,223 - Model - INFO - Learning rate:0.001000
+2021-10-03 11:57:21,363 - Model - INFO - PARAMETER ...
+2021-10-03 11:57:21,363 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 11:57:51,283 - Model - INFO - The number of training data is: 9750
+2021-10-03 11:57:51,283 - Model - INFO - The number of test data is: 3762
+2021-10-03 11:57:51,337 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 11:57:51,338 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 11:57:51,338 - Model - INFO - Learning rate:0.001000
+2021-10-03 11:59:31,390 - Model - INFO - PARAMETER ...
+2021-10-03 11:59:31,390 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 12:00:01,183 - Model - INFO - The number of training data is: 9750
+2021-10-03 12:00:01,184 - Model - INFO - The number of test data is: 3762
+2021-10-03 12:00:01,240 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 12:00:01,241 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 12:00:01,241 - Model - INFO - Learning rate:0.001000
+2021-10-03 12:00:12,329 - Model - INFO - PARAMETER ...
+2021-10-03 12:00:12,329 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 12:00:37,205 - Model - INFO - The number of training data is: 9750
+2021-10-03 12:00:37,205 - Model - INFO - The number of test data is: 3762
+2021-10-03 12:00:37,273 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 12:00:37,274 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 12:00:37,274 - Model - INFO - Learning rate:0.001000
+2021-10-03 12:02:10,819 - Model - INFO - PARAMETER ...
+2021-10-03 12:02:10,819 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 12:02:50,660 - Model - INFO - The number of training data is: 9750
+2021-10-03 12:02:50,660 - Model - INFO - The number of test data is: 3762
+2021-10-03 12:02:50,714 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 12:02:50,714 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 12:02:50,715 - Model - INFO - Learning rate:0.001000
+2021-10-03 12:04:44,724 - Model - INFO - PARAMETER ...
+2021-10-03 12:04:44,724 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 12:05:11,908 - Model - INFO - The number of training data is: 9750
+2021-10-03 12:05:11,908 - Model - INFO - The number of test data is: 3762
+2021-10-03 12:05:11,957 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 12:05:11,958 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 12:05:11,958 - Model - INFO - Learning rate:0.001000
+2021-10-03 15:29:12,078 - Model - INFO - PARAMETER ...
+2021-10-03 15:29:12,078 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 15:29:41,324 - Model - INFO - The number of training data is: 9750
+2021-10-03 15:29:41,324 - Model - INFO - The number of test data is: 3762
+2021-10-03 15:29:41,389 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 15:29:41,390 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 15:29:41,390 - Model - INFO - Learning rate:0.001000
+2021-10-03 15:39:14,996 - Model - INFO - PARAMETER ...
+2021-10-03 15:39:14,996 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 15:39:36,946 - Model - INFO - The number of training data is: 9750
+2021-10-03 15:39:36,946 - Model - INFO - The number of test data is: 3762
+2021-10-03 15:41:33,093 - Model - INFO - PARAMETER ...
+2021-10-03 15:41:33,093 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 15:41:54,475 - Model - INFO - The number of training data is: 9750
+2021-10-03 15:41:54,475 - Model - INFO - The number of test data is: 3762
+2021-10-03 15:41:54,555 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 15:41:54,555 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 15:41:54,556 - Model - INFO - Learning rate:0.001000
+2021-10-03 15:47:38,416 - Model - INFO - PARAMETER ...
+2021-10-03 15:47:38,416 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 15:47:59,822 - Model - INFO - The number of training data is: 9750
+2021-10-03 15:47:59,822 - Model - INFO - The number of test data is: 3762
+2021-10-03 15:47:59,889 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 15:47:59,889 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 15:47:59,889 - Model - INFO - Learning rate:0.001000
+2021-10-03 15:49:39,059 - Model - INFO - PARAMETER ...
+2021-10-03 15:49:39,060 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 15:50:00,899 - Model - INFO - The number of training data is: 9750
+2021-10-03 15:50:00,899 - Model - INFO - The number of test data is: 3762
+2021-10-03 15:50:00,964 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 15:50:00,965 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 15:50:00,965 - Model - INFO - Learning rate:0.001000
+2021-10-03 15:51:11,180 - Model - INFO - PARAMETER ...
+2021-10-03 15:51:11,180 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 15:51:32,834 - Model - INFO - The number of training data is: 9750
+2021-10-03 15:51:32,835 - Model - INFO - The number of test data is: 3762
+2021-10-03 15:51:32,898 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 15:51:32,899 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 15:51:32,899 - Model - INFO - Learning rate:0.001000
+2021-10-03 15:57:52,155 - Model - INFO - PARAMETER ...
+2021-10-03 15:57:52,155 - Model - INFO - Namespace(batch_size=8, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 15:58:13,843 - Model - INFO - The number of training data is: 9750
+2021-10-03 15:58:13,843 - Model - INFO - The number of test data is: 3762
+2021-10-03 15:58:13,907 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 15:58:13,907 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 15:58:13,907 - Model - INFO - Learning rate:0.001000
+2021-10-03 15:59:44,777 - Model - INFO - PARAMETER ...
+2021-10-03 15:59:44,778 - Model - INFO - Namespace(batch_size=4, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 16:00:06,225 - Model - INFO - The number of training data is: 9750
+2021-10-03 16:00:06,226 - Model - INFO - The number of test data is: 3762
+2021-10-03 16:00:06,292 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 16:00:06,293 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 16:00:06,293 - Model - INFO - Learning rate:0.001000
+2021-10-03 16:03:06,985 - Model - INFO - PARAMETER ...
+2021-10-03 16:03:06,985 - Model - INFO - Namespace(batch_size=2, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 16:03:28,478 - Model - INFO - The number of training data is: 9750
+2021-10-03 16:03:28,479 - Model - INFO - The number of test data is: 3762
+2021-10-03 16:03:28,547 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 16:03:28,547 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 16:03:28,548 - Model - INFO - Learning rate:0.001000
+2021-10-03 16:04:16,000 - Model - INFO - PARAMETER ...
+2021-10-03 16:04:16,000 - Model - INFO - Namespace(batch_size=4, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 16:04:37,455 - Model - INFO - The number of training data is: 9750
+2021-10-03 16:04:37,455 - Model - INFO - The number of test data is: 3762
+2021-10-03 16:04:37,519 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 16:04:37,520 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 16:04:37,520 - Model - INFO - Learning rate:0.001000
+2021-10-03 16:05:30,566 - Model - INFO - PARAMETER ...
+2021-10-03 16:05:30,567 - Model - INFO - Namespace(batch_size=4, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_cdist', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=20000, optimizer='Adam', step_size=10, test_area=5)
+2021-10-03 16:05:52,295 - Model - INFO - The number of training data is: 9750
+2021-10-03 16:05:52,295 - Model - INFO - The number of test data is: 3762
+2021-10-03 16:05:52,361 - Model - INFO - No existing model, starting training from scratch...
+2021-10-03 16:05:52,361 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-03 16:05:52,361 - Model - INFO - Learning rate:0.001000

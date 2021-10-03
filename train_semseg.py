@@ -37,14 +37,14 @@ def inplace_relu(m):
 def parse_args():
     parser = argparse.ArgumentParser('Model')
     parser.add_argument('--model', type=str, default='pointnet_sem_seg', help='model name [default: pointnet_sem_seg]')
-    parser.add_argument('--batch_size', type=int, default=16, help='Batch Size during training [default: 16]')
+    parser.add_argument('--batch_size', type=int, default=4, help='Batch Size during training [default: 16]')
     parser.add_argument('--epoch', default=32, type=int, help='Epoch to run [default: 32]')
     parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate [default: 0.001]')
     parser.add_argument('--gpu', type=str, default='0', help='GPU to use [default: GPU 0]')
     parser.add_argument('--optimizer', type=str, default='Adam', help='Adam or SGD [default: Adam]')
     parser.add_argument('--log_dir', type=str, default=None, help='Log path [default: None]')
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='weight decay [default: 1e-4]')
-    parser.add_argument('--npoint', type=int, default=4096, help='Point Number [default: 4096]')
+    parser.add_argument('--npoint', type=int, default=20000, help='Point Number [default: 4096]')
     parser.add_argument('--nanchor', type=int, default=128, help='Anchor Number [default: 128]')
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
     parser.add_argument('--lr_decay', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
@@ -112,9 +112,11 @@ def main(args):
     '''ANCHORS SETTING'''
     NUM_ANCHORS = args.nanchor
     anchors_size = (NUM_ANCHORS, 3)
-    np.random.seed = 49
+    # np.random.seed = 49
     anchors = np.random.random(anchors_size)
     anchors = torch.Tensor(anchors)
+    anchors = anchors.unsqueeze(0)
+    anchors = anchors.repeat(BATCH_SIZE, 1, 1)
     anchors = anchors.float().cuda()
 
     '''MODEL LOADING'''
@@ -229,15 +231,14 @@ def main(args):
         classifier = classifier.train()
 
         for i, (points, target) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
-            cdist = convex_dis
             optimizer.zero_grad()
 
             points = points.data.numpy()
             points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
             points = torch.Tensor(points)
-            c_distance = nn_convex_dist(points, anchors, points, M=100) # B*N*num_anchors
-            points = torch.cat((points, c_distance), 2) # B*N*(3 + num_anchors)
             points, target = points.float().cuda(), target.long().cuda()
+            c_distance = nn_convex_dist(points, anchors, points, M=32) # B*N*num_anchors
+            points = torch.cat((points, c_distance), 2) # B*N*(3 + num_anchors)
             points = points.transpose(2, 1)
 
             seg_pred, trans_feat = classifier(points)

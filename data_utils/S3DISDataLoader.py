@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 
 
 class S3DISDataset(Dataset):
-    def __init__(self, split='train', data_root='trainval_fullarea', num_point=4096, test_area=5, block_size=1.0, sample_rate=1.0, transform=None, , bs=16):
+    def __init__(self, split='train', data_root='trainval_fullarea', num_point=20000, test_area=5, block_size=1.0, sample_rate=1.0, transform=None, bs=16):
         super().__init__()
         self.num_point = num_point
         self.block_size = block_size
@@ -15,15 +15,15 @@ class S3DISDataset(Dataset):
         self.anchors = [] # 随机观察点
         self.global_max = 0.0
 
-        if anchors_type == 1:  # case 1: anchors are fixed 128
-            anchors_size = (128, 3)
-            # np.random.seed = 49
-            self.anchors = np.random.random(anchors_size)
-        # TODO: FIX THESE TWO PART
-        elif anchors_type == 2:  # case 2: anchors are learnable
-            continue
-        elif anchors_type == 3:  # case 3: anchors are proposed??
-            continue
+        # if anchors_type == 1:  # case 1: anchors are fixed 128
+        #     anchors_size = (128, 3)
+        #     # np.random.seed = 49
+        #     self.anchors = np.random.random(anchors_size)
+        # # TODO: FIX THESE TWO PART
+        # elif anchors_type == 2:  # case 2: anchors are learnable
+            
+        # elif anchors_type == 3:  # case 3: anchors are proposed??
+            
             
         rooms = sorted(os.listdir(data_root))
         rooms = [room for room in rooms if 'Area_' in room]
@@ -37,6 +37,7 @@ class S3DISDataset(Dataset):
         num_point_all = []
         labelweights = np.zeros(13)
 
+        # TODO: here need to be further modified
         for room_name in tqdm(rooms_split, total=len(rooms_split)):
             room_path = os.path.join(data_root, room_name)
             room_data = np.load(room_path)  # xyzrgbl, N*7
@@ -59,32 +60,6 @@ class S3DISDataset(Dataset):
             room_idxs.extend([index] * int(round(sample_prob[index] * num_iter)))
         self.room_idxs = np.array(room_idxs)
         print("Totally {} samples in {} set.".format(len(self.room_idxs), split))
-    # TODO: 不能放在这里计算
-    # def convex_dist(self, points1, points2, bsize, M=100):
-    #     """
-    #     Args:
-    #         points1 - BxSx3 
-    #         points2 - BxSx3
-    #         bsize - batch size N
-    #         pcd - BxNx3
-
-    #     Rets：
-    #         cdist - BxS
-    #     """
-    #     assert(points1.shape[1]==points2.shape[1])
-    #     B, S, N = points1.shape[0], points1.shape[1], bsize
-    #     dist = torch.norm(points2 - points1, dim=-1, keepdim=True) #BxSx1
-    #     n = (points2 - points1) / dist #BxSx3
-    #     positions = (torch.arange(0, M) / (M-1))[None, None, :, None].expand(B, S, -1, 1).to(points1.device) #BxSxMx1
-    #     dd = dist[:, :, None, :].expand(-1, -1, M, -1) #BxSxMx1
-    #     nn = n[:, :, None, :].expand(-1, -1, M, -1) #BxSxMx3
-    #     pp1 = points1[:, :, None, :].expand(-1, -1, M, -1) #BxSxMx3
-    #     sampled_points = pp1 + nn * dd * positions #BxSxMx3
-    #     pp = pcd[:, None, :, :].expand(-1, S, -1, -1) #BxSxNx3
-    #     nn_dist, _, _= ops.knn_points(sampled_points.reshape(B*S, M, 3), pp.reshape(B*S, N, 3))
-    #     nn_dist = nn_dist.view(B, S, M, 1)
-    #     cdist = torch.sqrt(torch.amax(nn_dist.squeeze(-1), dim=-1)) #BxS
-    #     return cdist
 
     def __getitem__(self, idx):
         room_idx = self.room_idxs[idx]
@@ -93,14 +68,14 @@ class S3DISDataset(Dataset):
         N_points = points.shape[0]
 
         # 随机降采样
-        if self.num_points > N_points:
-            selected_point_idxs = np.random.choice(N_points, self.num_points, replace=True) # 随机降采样
+        if self.num_point > N_points:
+            selected_point_idxs = np.random.choice(N_points, self.num_point, replace=True)
         else:
-            selected_point_idxs = np.random.choice(N_points, self.num_points, replace=False)
+            selected_point_idxs = np.random.choice(N_points, self.num_point, replace=False)
         # normalize
         selected_points = points[selected_point_idxs, :3]  # num_point * 3: xyz
-        current_points = np.zeros((self.num_points, 3))
-        room_coord_max_global = np.amax(self.room_coord_max[room_idx], axis=1)
+        current_points = np.zeros((self.num_point, 3))
+        # room_coord_max_global = np.amax(self.room_coord_max[room_idx], axis=1)
         current_points[:, 0] = selected_points[:, 0] / self.room_coord_max_xyz[room_idx]
         current_points[:, 1] = selected_points[:, 1] / self.room_coord_max_xyz[room_idx]
         current_points[:, 2] = selected_points[:, 2] / self.room_coord_max_xyz[room_idx]      
@@ -108,7 +83,7 @@ class S3DISDataset(Dataset):
 
         # points + convex_feature
         # current_cdist = convex_dist(current_points, self.anchors, self.batch_size, M=100)
-        current_points = np.concatenate((current_points, current_cdist), axis=-1)
+        # current_points = np.concatenate((current_points, current_cdist), axis=-1)
         return current_points, current_labels
 
     def __len__(self):
@@ -193,10 +168,10 @@ class ScannetDatasetWholeScene():
         N_points = points.shape[0]
 
         # 随机降采样
-        if self.num_points > N_points:
-            selected_point_idxs = np.random.choice(N_points, self.num_points, replace=True) # 随机降采样
+        if self.num_point > N_points:
+            selected_point_idxs = np.random.choice(N_points, self.num_point, replace=True) # 随机降采样
         else:
-            selected_point_idxs = np.random.choice(N_points, self.num_points, replace=False)
+            selected_point_idxs = np.random.choice(N_points, self.num_point, replace=False)
         # normalize
         selected_points = points[selected_point_idxs, :3]  # num_point * 3: xyz
         normlized_xyz = np.zeros((point_size, 3))
