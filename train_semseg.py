@@ -16,6 +16,8 @@ from tqdm import tqdm
 import provider
 import numpy as np
 import time
+from pytorch3d import ops
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = BASE_DIR
@@ -37,15 +39,16 @@ def inplace_relu(m):
 def parse_args():
     parser = argparse.ArgumentParser('Model')
     parser.add_argument('--model', type=str, default='pointnet_sem_seg', help='model name [default: pointnet_sem_seg]')
-    parser.add_argument('--batch_size', type=int, default=4, help='Batch Size during training [default: 16]')
+    parser.add_argument('--batch_size', type=int, default=5, help='Batch Size during training [default: 16]')
     parser.add_argument('--epoch', default=32, type=int, help='Epoch to run [default: 32]')
     parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate [default: 0.001]')
     parser.add_argument('--gpu', type=str, default='0', help='GPU to use [default: GPU 0]')
     parser.add_argument('--optimizer', type=str, default='Adam', help='Adam or SGD [default: Adam]')
     parser.add_argument('--log_dir', type=str, default=None, help='Log path [default: None]')
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='weight decay [default: 1e-4]')
-    parser.add_argument('--npoint', type=int, default=20000, help='Point Number [default: 4096]')
+    parser.add_argument('--npoint', type=int, default=1024, help='Point Number [default: 4096]')
     parser.add_argument('--nanchor', type=int, default=128, help='Anchor Number [default: 128]')
+    parser.add_argument('--nsegment', type=int, default=2, help='Seperate cdist calculate GPU load')
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
     parser.add_argument('--lr_decay', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
     parser.add_argument('--test_area', type=int, default=5, help='Which area to use for test, option: 1-6 [default: 5]')
@@ -111,6 +114,7 @@ def main(args):
 
     '''ANCHORS SETTING'''
     NUM_ANCHORS = args.nanchor
+    NUM_SEG = args.nsegment
     anchors_size = (NUM_ANCHORS, 3)
     # np.random.seed = 49
     anchors = np.random.random(anchors_size)
@@ -123,8 +127,9 @@ def main(args):
     MODEL = importlib.import_module(args.model)
     shutil.copy('models/%s.py' % args.model, str(experiment_dir))
     shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
-
-    classifier = MODEL.get_model(NUM_CLASSES, NUM_ANCHORS + 3).cuda()
+    
+    # TODO:修改传入数据的shape
+    classifier = MODEL.get_model(NUM_CLASSES, NUM_ANCHORS + 9).cuda()
     criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
 
@@ -162,16 +167,17 @@ def main(args):
         if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
             m.momentum = momentum
     
-    def convex_dist(points1, points2, pcd, M=100):
-        """
+    def convex_dist(points1, points2, pcd, M=64):
+        '''
         Args:
             points1 - BxSx3 
             points2 - BxSx3
             pcd - BxNx3
-
-        Rets：
+        Rets:
             cdist - BxS
-        """
+        '''
+
+        # print(points1.shape[1], points2.shape[1])
         assert(points1.shape[1]==points2.shape[1])
         B, S, N = points1.shape[0], points1.shape[1], pcd.shape[1]
         dist = torch.norm(points2 - points1, dim=-1, keepdim=True) #BxSx1
@@ -197,10 +203,12 @@ def main(args):
             dists_1 - BxS_1
             dists_2 - BxS_2
         """
+        # TODO: WATCH GPU INCREASE
         B, S1, S2 = points1.shape[0], points1.shape[1], points2.shape[1]
         pp1 = points1[:, :, None, :].expand(-1, -1, S2, -1).reshape(B, -1 ,3) #BxS1S2x3
         pp2 = points2[:, None, :, :].expand(-1, S1, -1, -1).reshape(B, -1 ,3) #BxS1S2x3
-        cdists = convex_dist(pp1, pp2, pcd).view(B, S1, -1) #BxS1xS2
+        # TODO: 只对pcd进行downsample
+        cdists = convex_dist(pp1, pp2, pcd, M).view(B, S1, -1) #BxS1xS2
         # dists_1, dists_2 = cdists.amin(dim=-1), cdists.amin(dim=-1)
         return cdists
 
@@ -230,14 +238,38 @@ def main(args):
         loss_sum = 0
         classifier = classifier.train()
 
-        for i, (points, target) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
+        for i, (points, target, coord_max_xyz) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
             optimizer.zero_grad()
 
             points = points.data.numpy()
-            points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
+            # 方法一 不将点云移动中心计算cdist
+            points_norm = points[:, :, 9:12]
+            points = points[:, :, :9]
+            # 方法二 将点云移动中心计算cdist
+            # points_norm = points[:, :, 9:12]
+            # TODO: 暂时取消rotation
+            # points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
             points = torch.Tensor(points)
+            points_norm = torch.Tensor(points_norm)
             points, target = points.float().cuda(), target.long().cuda()
-            c_distance = nn_convex_dist(points, anchors, points, M=32) # B*N*num_anchors
+            points_norm = points_norm.float().cuda()
+            # 分布计算cdist
+            # TODO: calculate c_dist
+            B = points_norm.shape[0]
+            assert(B%NUM_SEG == 0)
+            seg_len = B//NUM_SEG
+            for i in range(NUM_SEG):
+                start = i*seg_len
+                end = start + seg_len
+                c_distance_seg = nn_convex_dist(points_norm[start:end, :, :], anchors, points_norm[start:end, :, :], M=64) # B*N*num_anchors
+                if i == 0:
+                    c_distance = c_distance_seg
+                    continue
+                c_distance = torch.cat((c_distance, c_distance_seg), 0)
+            # TODO: CHCECK GRAD
+            # 整体计算cdist
+            # TODO: 对pcd3 降采样256传入. idex抽帧
+            # c_distance = nn_convex_dist(points_norm, anchors, points_norm, M=64) # B*N*num_anchors
             points = torch.cat((points, c_distance), 2) # B*N*(3 + num_anchors)
             points = points.transpose(2, 1)
 
@@ -283,10 +315,34 @@ def main(args):
             classifier = classifier.eval()
 
             log_string('---- EPOCH %03d EVALUATION ----' % (global_epoch + 1))
-            for i, (points, target) in tqdm(enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9):
+            for i, (points, target, coord_max_xyz) in tqdm(enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9):
+
                 points = points.data.numpy()
+                # 方法一 不将点云移动中心计算cdist
+                points_norm = points[:, :, 9:12]
+                points = points[:, :, :9]
+                # 方法二 将点云移动中心计算cdist
+                # points_norm = points[:, :, 9:12]
+                # TODO: 暂时取消rotation
+                # points[:, :, :3] = provider.rotate_point_cloud_z(points[:, :, :3])
                 points = torch.Tensor(points)
+                points_norm = torch.Tensor(points_norm)
                 points, target = points.float().cuda(), target.long().cuda()
+                points_norm = points_norm.float().cuda()
+                # TODO: calculate c_dist
+                B = points_norm.shape[0]
+                assert(B%NUM_SEG == 0)
+                seg_len = B//NUM_SEG
+                for i in range(NUM_SEG):
+                    start = i*seg_len
+                    end = start + seg_len
+                    c_distance_seg = nn_convex_dist(points_norm[start:end, :, :], anchors, points_norm[start:end, :, :], M=64) # B*N*num_anchors
+                    if i == 0:
+                        c_distance = c_distance_seg
+                        continue
+                    c_distance = torch.cat((c_distance, c_distance_seg), 0)
+                # c_distance = nn_convex_dist(points_norm, anchors, points_norm, M=64) # B*N*num_anchors
+                points = torch.cat((points, c_distance), 2) # B*N*(3 + num_anchors)
                 points = points.transpose(2, 1)
 
                 seg_pred, trans_feat = classifier(points)
@@ -345,5 +401,6 @@ def main(args):
 
 
 if __name__ == '__main__':
+    os.chdir(sys.path[0])
     args = parse_args()
     main(args)

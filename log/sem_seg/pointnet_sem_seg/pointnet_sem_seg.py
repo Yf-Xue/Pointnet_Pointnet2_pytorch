@@ -7,10 +7,10 @@ from pointnet_utils import PointNetEncoder, feature_transform_reguliarzer
 
 
 class get_model(nn.Module):
-    def __init__(self, num_class):
+    def __init__(self, num_class, num_feature):
         super(get_model, self).__init__()
         self.k = num_class
-        self.feat = PointNetEncoder(global_feat=False, feature_transform=True, channel=9)
+        self.feat = PointNetEncoder(global_feat=False, feature_transform=False, channel=num_feature)
         self.conv1 = torch.nn.Conv1d(1088, 512, 1)
         self.conv2 = torch.nn.Conv1d(512, 256, 1)
         self.conv3 = torch.nn.Conv1d(256, 128, 1)
@@ -23,9 +23,9 @@ class get_model(nn.Module):
         batchsize = x.size()[0]
         n_pts = x.size()[2]
         x, trans, trans_feat = self.feat(x)
-        x = F.relu(self.bn1(self.conv1(x)), inplace=True)
-        x = F.relu(self.bn2(self.conv2(x)), inplace=True)
-        x = F.relu(self.bn3(self.conv3(x)), inplace=True)
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = F.relu(self.bn3(self.conv3(x)))
         x = self.conv4(x)
         x = x.transpose(2,1).contiguous()
         x = F.log_softmax(x.view(-1,self.k), dim=-1)
@@ -39,8 +39,8 @@ class get_loss(torch.nn.Module):
 
     def forward(self, pred, target, trans_feat, weight):
         loss = F.nll_loss(pred, target, weight = weight)
-        mat_diff_loss = feature_transform_reguliarzer(trans_feat)
-        total_loss = loss + mat_diff_loss * self.mat_diff_loss_scale
+        # mat_diff_loss = feature_transform_reguliarzer(trans_feat)
+        total_loss = loss #+ mat_diff_loss * self.mat_diff_loss_scale
         return total_loss
 
 

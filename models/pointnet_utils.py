@@ -86,7 +86,7 @@ class STNkd(nn.Module):
 
 
 class PointNetEncoder(nn.Module):
-    def __init__(self, global_feat=True, feature_transform=False, channel=3):
+    def __init__(self, global_feat=True, feature_transform=False, channel=128+9):
         super(PointNetEncoder, self).__init__()
         self.stn = STN3d(channel)
         self.conv1 = torch.nn.Conv1d(channel, 64, 1)
@@ -134,6 +134,7 @@ class PointNetEncoder(nn.Module):
 
 
 def feature_transform_reguliarzer(trans):
+    # import pdb; pdb.set_trace()
     d = trans.size()[1]
     I = torch.eye(d)[None, :, :]
     if trans.is_cuda:
