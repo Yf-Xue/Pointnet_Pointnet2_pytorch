@@ -40,13 +40,14 @@ def parse_args():
     parser = argparse.ArgumentParser('Model')
     parser.add_argument('--model', type=str, default='pointnet_sem_seg', help='model name [default: pointnet_sem_seg]')
     parser.add_argument('--batch_size', type=int, default=5, help='Batch Size during training [default: 16]')
-    parser.add_argument('--epoch', default=32, type=int, help='Epoch to run [default: 32]')
+    parser.add_argument('--epoch', default=128, type=int, help='Epoch to run [default: 32]')
     parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate [default: 0.001]')
     parser.add_argument('--gpu', type=str, default='0', help='GPU to use [default: GPU 0]')
     parser.add_argument('--optimizer', type=str, default='Adam', help='Adam or SGD [default: Adam]')
     parser.add_argument('--log_dir', type=str, default=None, help='Log path [default: None]')
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='weight decay [default: 1e-4]')
-    parser.add_argument('--npoint', type=int, default=1024, help='Point Number [default: 4096]')
+    parser.add_argument('--npoint_train', type=int, default=1024, help='Point Number when training')
+    parser.add_argument('--npoint_eval', type=int, default=1024, help='Point Number when evaluate')
     parser.add_argument('--nanchor', type=int, default=128, help='Anchor Number [default: 128]')
     parser.add_argument('--nsegment', type=int, default=2, help='Seperate cdist calculate GPU load')
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
@@ -54,7 +55,6 @@ def parse_args():
     parser.add_argument('--test_area', type=int, default=5, help='Which area to use for test, option: 1-6 [default: 5]')
 
     return parser.parse_args()
-
 
 def main(args):
     def log_string(str):
@@ -94,13 +94,14 @@ def main(args):
 
     root = 'data/s3dis/stanford_indoor3d/'
     NUM_CLASSES = 13
-    NUM_POINT = args.npoint
+    NUM_POINT_TRAIN = args.npoint_train
+    NUM_POINT_EVAL = args.npoint_eval
     BATCH_SIZE = args.batch_size
 
     print("start loading training data ...")
-    TRAIN_DATASET = S3DISDataset(split='train', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None, bs=BATCH_SIZE)
+    TRAIN_DATASET = S3DISDataset(split='train', data_root=root, num_point=NUM_POINT_TRAIN, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None, bs=BATCH_SIZE)
     print("start loading test data ...")
-    TEST_DATASET = S3DISDataset(split='test', data_root=root, num_point=NUM_POINT, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None, bs=BATCH_SIZE)
+    TEST_DATASET = S3DISDataset(split='test', data_root=root, num_point=NUM_POINT_EVAL, test_area=args.test_area, block_size=1.0, sample_rate=1.0, transform=None, bs=BATCH_SIZE)
 
     trainDataLoader = torch.utils.data.DataLoader(TRAIN_DATASET, batch_size=BATCH_SIZE, shuffle=True, num_workers=10,
                                                   pin_memory=True, drop_last=True,
@@ -255,21 +256,21 @@ def main(args):
             points_norm = points_norm.float().cuda()
             # 分布计算cdist
             # TODO: calculate c_dist
-            B = points_norm.shape[0]
-            assert(B%NUM_SEG == 0)
-            seg_len = B//NUM_SEG
-            for i in range(NUM_SEG):
-                start = i*seg_len
-                end = start + seg_len
-                c_distance_seg = nn_convex_dist(points_norm[start:end, :, :], anchors, points_norm[start:end, :, :], M=64) # B*N*num_anchors
-                if i == 0:
-                    c_distance = c_distance_seg
-                    continue
-                c_distance = torch.cat((c_distance, c_distance_seg), 0)
+            # B = points_norm.shape[0]
+            # assert(B%NUM_SEG == 0)
+            # seg_len = B//NUM_SEG
+            # for i in range(NUM_SEG):
+            #     start = i*seg_len
+            #     end = start + seg_len
+            #     c_distance_seg = nn_convex_dist(points_norm[start:end, :, :], anchors, points_norm[start:end, :, :], M=64) # B*N*num_anchors
+            #     if i == 0:
+            #         c_distance = c_distance_seg
+            #         continue
+            #     c_distance = torch.cat((c_distance, c_distance_seg), 0)
             # TODO: CHCECK GRAD
             # 整体计算cdist
             # TODO: 对pcd3 降采样256传入. idex抽帧
-            # c_distance = nn_convex_dist(points_norm, anchors, points_norm, M=64) # B*N*num_anchors
+            c_distance = nn_convex_dist(points_norm, anchors, points_norm, M=64) # B*N*num_anchors
             points = torch.cat((points, c_distance), 2) # B*N*(3 + num_anchors)
             points = points.transpose(2, 1)
 
@@ -285,7 +286,7 @@ def main(args):
             pred_choice = seg_pred.cpu().data.max(1)[1].numpy()
             correct = np.sum(pred_choice == batch_label)
             total_correct += correct
-            total_seen += (BATCH_SIZE * NUM_POINT)
+            total_seen += (BATCH_SIZE * NUM_POINT_TRAIN)
             loss_sum += loss
         log_string('Training mean loss: %f' % (loss_sum / num_batches))
         log_string('Training accuracy: %f' % (total_correct / float(total_seen)))
@@ -329,19 +330,19 @@ def main(args):
                 points_norm = torch.Tensor(points_norm)
                 points, target = points.float().cuda(), target.long().cuda()
                 points_norm = points_norm.float().cuda()
-                # TODO: calculate c_dist
-                B = points_norm.shape[0]
-                assert(B%NUM_SEG == 0)
-                seg_len = B//NUM_SEG
-                for i in range(NUM_SEG):
-                    start = i*seg_len
-                    end = start + seg_len
-                    c_distance_seg = nn_convex_dist(points_norm[start:end, :, :], anchors, points_norm[start:end, :, :], M=64) # B*N*num_anchors
-                    if i == 0:
-                        c_distance = c_distance_seg
-                        continue
-                    c_distance = torch.cat((c_distance, c_distance_seg), 0)
-                # c_distance = nn_convex_dist(points_norm, anchors, points_norm, M=64) # B*N*num_anchors
+                # # TODO: calculate c_dist
+                # B = points_norm.shape[0]
+                # assert(B%NUM_SEG == 0)
+                # seg_len = B//NUM_SEG
+                # for i in range(NUM_SEG):
+                #     start = i*seg_len
+                #     end = start + seg_len
+                #     c_distance_seg = nn_convex_dist(points_norm[start:end, :, :], anchors, points_norm[start:end, :, :], M=64) # B*N*num_anchors
+                #     if i == 0:
+                #         c_distance = c_distance_seg
+                #         continue
+                #     c_distance = torch.cat((c_distance, c_distance_seg), 0)
+                c_distance = nn_convex_dist(points_norm, anchors, points_norm, M=64) # B*N*num_anchors
                 points = torch.cat((points, c_distance), 2) # B*N*(3 + num_anchors)
                 points = points.transpose(2, 1)
 
@@ -356,7 +357,7 @@ def main(args):
                 pred_val = np.argmax(pred_val, 2)
                 correct = np.sum((pred_val == batch_label))
                 total_correct += correct
-                total_seen += (BATCH_SIZE * NUM_POINT)
+                total_seen += (BATCH_SIZE * NUM_POINT_EVAL)
                 tmp, _ = np.histogram(batch_label, range(NUM_CLASSES + 1))
                 labelweights += tmp
 
