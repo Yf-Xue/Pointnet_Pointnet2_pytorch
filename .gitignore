@@ -99,6 +99,10 @@ venv.bak/
 .data
 data/
 
+# Log
+.log
+log/
+
 # Spyder project settings
 .spyderproject
 .spyproject
