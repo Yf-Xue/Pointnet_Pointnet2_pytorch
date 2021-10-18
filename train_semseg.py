@@ -39,8 +39,8 @@ def inplace_relu(m):
 def parse_args():
     parser = argparse.ArgumentParser('Model')
     parser.add_argument('--model', type=str, default='pointnet_sem_seg', help='model name [default: pointnet_sem_seg]')
-    parser.add_argument('--batch_size', type=int, default=5, help='Batch Size during training [default: 16]')
-    parser.add_argument('--epoch', default=32, type=int, help='Epoch to run [default: 32]')
+    parser.add_argument('--batch_size', type=int, default=16, help='Batch Size during training [default: 16]')
+    parser.add_argument('--epoch', default=128, type=int, help='Epoch to run [default: 32]')
     parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate [default: 0.001]')
     parser.add_argument('--gpu', type=str, default='0', help='GPU to use [default: GPU 0]')
     parser.add_argument('--optimizer', type=str, default='Adam', help='Adam or SGD [default: Adam]')
@@ -130,7 +130,7 @@ def main(args):
     shutil.copy('models/pointnet2_utils.py', str(experiment_dir))
     
     # TODO:修改传入数据的shape
-    classifier = MODEL.get_model(NUM_CLASSES, NUM_ANCHORS + 9).cuda()
+    classifier = MODEL.get_model(NUM_CLASSES, 9).cuda()
     criterion = MODEL.get_loss().cuda()
     classifier.apply(inplace_relu)
 
