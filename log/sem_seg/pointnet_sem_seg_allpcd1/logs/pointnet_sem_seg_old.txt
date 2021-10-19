@@ -1,0 +1,158 @@
+2021-10-12 23:12:01,294 - Model - INFO - PARAMETER ...
+2021-10-12 23:12:01,294 - Model - INFO - Namespace(batch_size=5, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_allpcd', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=1024, optimizer='Adam', step_size=10, test_area=5)
+2021-10-12 23:12:44,354 - Model - INFO - The number of training data is: 190441
+2021-10-12 23:12:44,355 - Model - INFO - The number of test data is: 73497
+2021-10-12 23:12:44,530 - Model - INFO - No existing model, starting training from scratch...
+2021-10-12 23:12:44,531 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-12 23:12:44,531 - Model - INFO - Learning rate:0.001000
+2021-10-12 23:14:32,952 - Model - INFO - PARAMETER ...
+2021-10-12 23:14:32,952 - Model - INFO - Namespace(batch_size=5, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_allpcd', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=1024, optimizer='Adam', step_size=10, test_area=5)
+2021-10-12 23:15:15,495 - Model - INFO - The number of training data is: 190441
+2021-10-12 23:15:15,495 - Model - INFO - The number of test data is: 73497
+2021-10-12 23:15:15,545 - Model - INFO - No existing model, starting training from scratch...
+2021-10-12 23:15:15,546 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-12 23:15:15,546 - Model - INFO - Learning rate:0.001000
+2021-10-13 06:37:48,433 - Model - INFO - Training mean loss: 0.908980
+2021-10-13 06:37:48,434 - Model - INFO - Training accuracy: 0.725795
+2021-10-13 06:37:48,434 - Model - INFO - Save model...
+2021-10-13 06:37:48,434 - Model - INFO - Saving at log/sem_seg/pointnet_sem_seg_allpcd/checkpoints/model.pth
+2021-10-13 06:37:48,514 - Model - INFO - Saving model....
+2021-10-13 06:37:50,744 - Model - INFO - ---- EPOCH 001 EVALUATION ----
+2021-10-13 10:55:40,218 - Model - INFO - PARAMETER ...
+2021-10-13 10:55:40,218 - Model - INFO - Namespace(batch_size=5, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_allpcd', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=1024, optimizer='Adam', step_size=10, test_area=5)
+2021-10-13 10:56:27,447 - Model - INFO - PARAMETER ...
+2021-10-13 10:56:27,447 - Model - INFO - Namespace(batch_size=5, decay_rate=0.0001, epoch=32, gpu='2', learning_rate=0.001, log_dir='pointnet_sem_seg_allpcd', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint=1024, optimizer='Adam', step_size=10, test_area=5)
+2021-10-13 10:57:10,414 - Model - INFO - The number of training data is: 190441
+2021-10-13 10:57:10,414 - Model - INFO - The number of test data is: 73497
+2021-10-13 10:57:10,460 - Model - INFO - No existing model, starting training from scratch...
+2021-10-13 10:57:10,461 - Model - INFO - **** Epoch 1 (1/32) ****
+2021-10-13 10:57:10,461 - Model - INFO - Learning rate:0.001000
+2021-10-13 16:36:29,788 - Model - INFO - Training mean loss: 0.763156
+2021-10-13 16:36:29,789 - Model - INFO - Training accuracy: 0.767614
+2021-10-13 16:36:29,789 - Model - INFO - Save model...
+2021-10-13 16:36:29,789 - Model - INFO - Saving at log/sem_seg/pointnet_sem_seg_allpcd/checkpoints/model.pth
+2021-10-13 16:36:29,861 - Model - INFO - Saving model....
+2021-10-13 16:36:31,997 - Model - INFO - ---- EPOCH 001 EVALUATION ----
+2021-10-13 18:46:12,745 - Model - INFO - eval mean loss: 1.166939
+2021-10-13 18:46:12,746 - Model - INFO - eval point avg class IoU: 0.369427
+2021-10-13 18:46:12,746 - Model - INFO - eval point accuracy: 0.733362
+2021-10-13 18:46:12,746 - Model - INFO - eval point avg class acc: 0.529098
+2021-10-13 18:46:12,746 - Model - INFO - ------- IoU --------
+class ceiling        weight: 0.090, IoU: 0.885 
+class floor          weight: 0.202, IoU: 0.870 
+class wall           weight: 0.169, IoU: 0.627 
+class beam           weight: 0.278, IoU: 0.005 
+class column         weight: 0.000, IoU: 0.075 
+class window         weight: 0.017, IoU: 0.436 
+class door           weight: 0.033, IoU: 0.188 
+class table          weight: 0.030, IoU: 0.437 
+class chair          weight: 0.039, IoU: 0.329 
+class sofa           weight: 0.019, IoU: 0.058 
+class bookcase       weight: 0.002, IoU: 0.406 
+class board          weight: 0.108, IoU: 0.251 
+class clutter        weight: 0.012, IoU: 0.235 
+
+2021-10-13 18:46:12,747 - Model - INFO - Eval mean loss: 1.166939
+2021-10-13 18:46:12,747 - Model - INFO - Eval accuracy: 0.733362
+2021-10-13 18:46:12,747 - Model - INFO - Save model...
+2021-10-13 18:46:12,747 - Model - INFO - Saving at log/sem_seg/pointnet_sem_seg_allpcd/checkpoints/best_model.pth
+2021-10-13 18:46:12,830 - Model - INFO - Saving model....
+2021-10-13 18:46:12,830 - Model - INFO - Best mIoU: 0.369427
+2021-10-13 18:46:12,830 - Model - INFO - **** Epoch 2 (2/32) ****
+2021-10-13 18:46:12,830 - Model - INFO - Learning rate:0.001000
+2021-10-14 00:00:49,223 - Model - INFO - Training mean loss: 0.509883
+2021-10-14 00:00:49,236 - Model - INFO - Training accuracy: 0.839845
+2021-10-14 00:00:51,505 - Model - INFO - ---- EPOCH 002 EVALUATION ----
+2021-10-14 01:59:07,272 - Model - INFO - eval mean loss: 0.845381
+2021-10-14 01:59:07,272 - Model - INFO - eval point avg class IoU: 0.405228
+2021-10-14 01:59:07,273 - Model - INFO - eval point accuracy: 0.768591
+2021-10-14 01:59:07,273 - Model - INFO - eval point avg class acc: 0.520738
+2021-10-14 01:59:07,273 - Model - INFO - ------- IoU --------
+class ceiling        weight: 0.090, IoU: 0.898 
+class floor          weight: 0.202, IoU: 0.957 
+class wall           weight: 0.169, IoU: 0.669 
+class beam           weight: 0.278, IoU: 0.000 
+class column         weight: 0.000, IoU: 0.085 
+class window         weight: 0.018, IoU: 0.522 
+class door           weight: 0.034, IoU: 0.151 
+class table          weight: 0.031, IoU: 0.534 
+class chair          weight: 0.039, IoU: 0.317 
+class sofa           weight: 0.019, IoU: 0.055 
+class bookcase       weight: 0.002, IoU: 0.501 
+class board          weight: 0.108, IoU: 0.286 
+class clutter        weight: 0.012, IoU: 0.294 
+
+2021-10-14 01:59:07,274 - Model - INFO - Eval mean loss: 0.845381
+2021-10-14 01:59:07,274 - Model - INFO - Eval accuracy: 0.768591
+2021-10-14 01:59:07,274 - Model - INFO - Save model...
+2021-10-14 01:59:07,274 - Model - INFO - Saving at log/sem_seg/pointnet_sem_seg_allpcd/checkpoints/best_model.pth
+2021-10-14 01:59:07,363 - Model - INFO - Saving model....
+2021-10-14 01:59:07,363 - Model - INFO - Best mIoU: 0.405228
+2021-10-14 01:59:07,363 - Model - INFO - **** Epoch 3 (3/32) ****
+2021-10-14 01:59:07,363 - Model - INFO - Learning rate:0.001000
+2021-10-14 07:13:36,304 - Model - INFO - Training mean loss: 0.466329
+2021-10-14 07:13:36,305 - Model - INFO - Training accuracy: 0.852718
+2021-10-14 07:13:38,358 - Model - INFO - ---- EPOCH 003 EVALUATION ----
+2021-10-14 09:06:19,372 - Model - INFO - eval mean loss: 0.845016
+2021-10-14 09:06:19,372 - Model - INFO - eval point avg class IoU: 0.438497
+2021-10-14 09:06:19,372 - Model - INFO - eval point accuracy: 0.773144
+2021-10-14 09:06:19,372 - Model - INFO - eval point avg class acc: 0.580783
+2021-10-14 09:06:19,372 - Model - INFO - ------- IoU --------
+class ceiling        weight: 0.090, IoU: 0.891 
+class floor          weight: 0.202, IoU: 0.972 
+class wall           weight: 0.168, IoU: 0.691 
+class beam           weight: 0.278, IoU: 0.002 
+class column         weight: 0.000, IoU: 0.142 
+class window         weight: 0.018, IoU: 0.538 
+class door           weight: 0.033, IoU: 0.284 
+class table          weight: 0.030, IoU: 0.540 
+class chair          weight: 0.039, IoU: 0.438 
+class sofa           weight: 0.019, IoU: 0.076 
+class bookcase       weight: 0.003, IoU: 0.502 
+class board          weight: 0.108, IoU: 0.340 
+class clutter        weight: 0.012, IoU: 0.284 
+
+2021-10-14 09:06:19,373 - Model - INFO - Eval mean loss: 0.845016
+2021-10-14 09:06:19,373 - Model - INFO - Eval accuracy: 0.773144
+2021-10-14 09:06:19,373 - Model - INFO - Save model...
+2021-10-14 09:06:19,373 - Model - INFO - Saving at log/sem_seg/pointnet_sem_seg_allpcd/checkpoints/best_model.pth
+2021-10-14 09:06:19,459 - Model - INFO - Saving model....
+2021-10-14 09:06:19,459 - Model - INFO - Best mIoU: 0.438497
+2021-10-14 09:06:19,459 - Model - INFO - **** Epoch 4 (4/32) ****
+2021-10-14 09:06:19,459 - Model - INFO - Learning rate:0.001000
+2021-10-14 14:11:50,522 - Model - INFO - Training mean loss: 0.456761
+2021-10-14 14:11:50,523 - Model - INFO - Training accuracy: 0.855358
+2021-10-14 14:11:52,458 - Model - INFO - ---- EPOCH 004 EVALUATION ----
+2021-10-14 16:04:40,768 - Model - INFO - eval mean loss: 0.980430
+2021-10-14 16:04:40,769 - Model - INFO - eval point avg class IoU: 0.409546
+2021-10-14 16:04:40,769 - Model - INFO - eval point accuracy: 0.769952
+2021-10-14 16:04:40,769 - Model - INFO - eval point avg class acc: 0.547517
+2021-10-14 16:04:40,770 - Model - INFO - ------- IoU --------
+class ceiling        weight: 0.090, IoU: 0.880 
+class floor          weight: 0.202, IoU: 0.953 
+class wall           weight: 0.169, IoU: 0.702 
+class beam           weight: 0.278, IoU: 0.003 
+class column         weight: 0.000, IoU: 0.124 
+class window         weight: 0.017, IoU: 0.546 
+class door           weight: 0.033, IoU: 0.157 
+class table          weight: 0.031, IoU: 0.492 
+class chair          weight: 0.039, IoU: 0.414 
+class sofa           weight: 0.019, IoU: 0.059 
+class bookcase       weight: 0.003, IoU: 0.441 
+class board          weight: 0.107, IoU: 0.248 
+class clutter        weight: 0.012, IoU: 0.305 
+
+2021-10-14 16:04:40,770 - Model - INFO - Eval mean loss: 0.980430
+2021-10-14 16:04:40,770 - Model - INFO - Eval accuracy: 0.769952
+2021-10-14 16:04:40,770 - Model - INFO - Best mIoU: 0.438497
+2021-10-14 16:04:40,771 - Model - INFO - **** Epoch 5 (5/32) ****
+2021-10-14 16:04:40,771 - Model - INFO - Learning rate:0.001000
+2021-10-15 15:59:24,795 - Model - INFO - PARAMETER ...
+2021-10-15 15:59:24,795 - Model - INFO - Namespace(batch_size=5, decay_rate=0.0001, epoch=32, gpu='0', learning_rate=0.001, log_dir='pointnet_sem_seg_allpcd', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint_eval=1024, npoint_train=1024, nsegment=2, optimizer='Adam', step_size=10, test_area=5)
+2021-10-15 15:59:45,475 - Model - INFO - PARAMETER ...
+2021-10-15 15:59:45,476 - Model - INFO - Namespace(batch_size=5, decay_rate=0.0001, epoch=32, gpu='2', learning_rate=0.001, log_dir='pointnet_sem_seg_allpcd', lr_decay=0.7, model='pointnet_sem_seg', nanchor=128, npoint_eval=1024, npoint_train=1024, nsegment=2, optimizer='Adam', step_size=10, test_area=5)
+2021-10-15 16:01:02,591 - Model - INFO - The number of training data is: 190441
+2021-10-15 16:01:02,591 - Model - INFO - The number of test data is: 73497
+2021-10-15 16:01:02,701 - Model - INFO - Use pretrain model
+2021-10-15 16:01:02,702 - Model - INFO - **** Epoch 1 (3/32) ****
+2021-10-15 16:01:02,702 - Model - INFO - Learning rate:0.001000

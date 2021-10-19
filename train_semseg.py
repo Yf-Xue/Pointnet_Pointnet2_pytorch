@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument('--log_dir', type=str, default=None, help='Log path [default: None]')
     parser.add_argument('--decay_rate', type=float, default=1e-4, help='weight decay [default: 1e-4]')
     parser.add_argument('--npoint_train', type=int, default=1024, help='Point Number when training')
-    parser.add_argument('--npoint_eval', type=int, default=4096, help='Point Number when evaluate')
+    parser.add_argument('--npoint_eval', type=int, default=1024, help='Point Number when evaluate')
     parser.add_argument('--nanchor', type=int, default=128, help='Anchor Number [default: 128]')
     parser.add_argument('--nsegment', type=int, default=2, help='Seperate cdist calculate GPU load')
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
