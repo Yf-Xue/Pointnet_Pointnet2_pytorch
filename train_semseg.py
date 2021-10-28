@@ -49,6 +49,7 @@ def parse_args():
     parser.add_argument('--npoint_train', type=int, default=1024, help='Point Number when training')
     parser.add_argument('--npoint_eval', type=int, default=1024, help='Point Number when evaluate')
     parser.add_argument('--nanchor', type=int, default=128, help='Anchor Number [default: 128]')
+    parser.add_argument('--anchor_type', type=str, default='fixed', help='Anchor type [fiexd or learn]')
     parser.add_argument('--nsegment', type=int, default=2, help='Seperate cdist calculate GPU load')
     parser.add_argument('--step_size', type=int, default=10, help='Decay step for lr decay [default: every 10 epochs]')
     parser.add_argument('--lr_decay', type=float, default=0.7, help='Decay rate for lr decay [default: 0.7]')
@@ -116,13 +117,28 @@ def main(args):
     '''ANCHORS SETTING'''
     NUM_ANCHORS = args.nanchor
     NUM_SEG = args.nsegment
-    anchors_size = (NUM_ANCHORS, 3)
-    # np.random.seed = 49
-    anchors = np.random.random(anchors_size)
+    try:
+        anchors = np.load(str(checkpoints_dir) + '/anchors.npy')
+        log_string('Use original anchors')
+    except:
+        anchors_size = (NUM_ANCHORS, 3)
+        # np.random.seed = 49
+        anchors = np.random.random(anchors_size)
+        np.save(str(checkpoints_dir) + '/anchors.npy', anchors)
+        log_string('Generate anchors')
+
     anchors = torch.Tensor(anchors)
-    anchors = anchors.unsqueeze(0)
-    anchors = anchors.repeat(BATCH_SIZE, 1, 1)
-    anchors = anchors.float().cuda()
+    
+    # anchors = anchors.repeat(BATCH_SIZE, 1, 1)
+    
+    if args.anchor_type == 'learn':
+        anchors = anchors.float().cuda()
+        anchors.requires_grad = True
+        
+        # anchors = torch.nn.parameter.Parameter(anchors, True)  # add anchor as a learnable param
+        # anchors = torch.Tensor(anchors)
+    else:
+        anchors = anchors.float().cuda()
 
     '''MODEL LOADING'''
     MODEL = importlib.import_module(args.model)
@@ -144,30 +160,39 @@ def main(args):
             torch.nn.init.constant_(m.bias.data, 0.0)
 
     try:
-        checkpoint = torch.load(str(experiment_dir) + '/checkpoints/best_model.pth')
+        checkpoint = torch.load(str(experiment_dir) + '/checkpoints/model.pth')
         start_epoch = checkpoint['epoch']
         classifier.load_state_dict(checkpoint['model_state_dict'])
+        best_iou = checkpoint['best_iou']
         log_string('Use pretrain model')
     except:
         log_string('No existing model, starting training from scratch...')
         start_epoch = 0
+        best_iou = 0
         classifier = classifier.apply(weights_init)
+    if args.anchor_type == 'learn':
+        opt_params = [{"params":classifier.parameters()},{"params":anchors}]
+    else:
+        opt_params = classifier.parameters()
 
     if args.optimizer == 'Adam':
+        # print(type(classifier.parameters()))
+        # print(type(anchors))
         optimizer = torch.optim.Adam(
-            classifier.parameters(),
+            # [classifier.parameters(), anchors],
+            # [{"params":classifier.parameters()},{"params":anchors}],
+            opt_params,
             lr=args.learning_rate,
             betas=(0.9, 0.999),
             eps=1e-08,
             weight_decay=args.decay_rate
         )
     else:
-        optimizer = torch.optim.SGD(classifier.parameters(), lr=args.learning_rate, momentum=0.9)
+        optimizer = torch.optim.SGD(opt_params, lr=args.learning_rate, momentum=0.9)
 
     def bn_momentum_adjust(m, momentum):
         if isinstance(m, torch.nn.BatchNorm2d) or isinstance(m, torch.nn.BatchNorm1d):
             m.momentum = momentum
-    
     def convex_dist(points1, points2, pcd, M=64):
         '''
         Args:
@@ -219,7 +244,8 @@ def main(args):
     MOMENTUM_DECCAY_STEP = args.step_size
 
     global_epoch = 0
-    best_iou = 0
+     
+
 
     for epoch in range(start_epoch, args.epoch):
         '''Train on chopped scenes'''
@@ -240,8 +266,11 @@ def main(args):
         classifier = classifier.train()
 
         for i, (points, target, coord_max_xyz) in tqdm(enumerate(trainDataLoader), total=len(trainDataLoader), smoothing=0.9):
-            optimizer.zero_grad()
+            # test
+            # if i >= 10:
+            #     break
 
+            optimizer.zero_grad()
             points = points.data.numpy()
             # 方法一 不将点云移动中心计算cdist
             points_norm = points[:, :, 9:12]
@@ -270,7 +299,9 @@ def main(args):
             # TODO: CHCECK GRAD
             # 整体计算cdist
             # TODO: 对pcd3 降采样256传入. idex抽帧
-            c_distance = nn_convex_dist(points_norm, anchors, points_norm, M=64) # B*N*num_anchors
+            anchors_B = anchors.unsqueeze(0)
+            anchors_B = anchors_B.expand(BATCH_SIZE, NUM_ANCHORS, 3)
+            c_distance = nn_convex_dist(points_norm, anchors_B, points_norm, M=64) # B*N*num_anchors
             points = torch.cat((points, c_distance), 2) # B*N*(3 + num_anchors)
             points = points.transpose(2, 1)
 
@@ -291,17 +322,6 @@ def main(args):
         log_string('Training mean loss: %f' % (loss_sum / num_batches))
         log_string('Training accuracy: %f' % (total_correct / float(total_seen)))
 
-        if epoch % 5 == 0:
-            logger.info('Save model...')
-            savepath = str(checkpoints_dir) + '/model.pth'
-            log_string('Saving at %s' % savepath)
-            state = {
-                'epoch': epoch,
-                'model_state_dict': classifier.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-            }
-            torch.save(state, savepath)
-            log_string('Saving model....')
 
         '''Evaluate on chopped scenes'''
         with torch.no_grad():
@@ -317,6 +337,9 @@ def main(args):
 
             log_string('---- EPOCH %03d EVALUATION ----' % (global_epoch + 1))
             for i, (points, target, coord_max_xyz) in tqdm(enumerate(testDataLoader), total=len(testDataLoader), smoothing=0.9):
+                # test
+                # if i >= 10:
+                #     break
 
                 points = points.data.numpy()
                 # 方法一 不将点云移动中心计算cdist
@@ -342,7 +365,9 @@ def main(args):
                 #         c_distance = c_distance_seg
                 #         continue
                 #     c_distance = torch.cat((c_distance, c_distance_seg), 0)
-                c_distance = nn_convex_dist(points_norm, anchors, points_norm, M=64) # B*N*num_anchors
+                anchors_B = anchors.unsqueeze(0)
+                anchors_B = anchors_B.expand(BATCH_SIZE, NUM_ANCHORS, 3)
+                c_distance = nn_convex_dist(points_norm, anchors_B, points_norm, M=64) # B*N*num_anchors
                 points = torch.cat((points, c_distance), 2) # B*N*(3 + num_anchors)
                 points = points.transpose(2, 1)
 
@@ -374,6 +399,24 @@ def main(args):
             log_string('eval point avg class acc: %f' % (
                 np.mean(np.array(total_correct_class) / (np.array(total_seen_class, dtype=np.float) + 1e-6))))
 
+            # save model 
+            logger.info('Save model...')
+            savepath = str(checkpoints_dir) + '/model.pth'
+            log_string('Saving at %s' % savepath)
+            state = {
+                'epoch': epoch,
+                'model_state_dict': classifier.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'best_iou': mIoU
+            }
+            if args.anchor_type == 'learn':
+                anchors_np = anchors.cpu().numpy()
+                np.save(str(checkpoints_dir) + '/anchors.npy', anchors_np)
+                # 为了检测anchor是否变化
+                # np.save(str(checkpoints_dir) + '/anchors' + str(epoch) + '.npy', anchors_np)
+            torch.save(state, savepath)
+            log_string('Saving model....')
+            
             iou_per_class_str = '------- IoU --------\n'
             for l in range(NUM_CLASSES):
                 iou_per_class_str += 'class %s weight: %.3f, IoU: %.3f \n' % (
@@ -387,7 +430,9 @@ def main(args):
             if mIoU >= best_iou:
                 best_iou = mIoU
                 logger.info('Save model...')
-                savepath = str(checkpoints_dir) + '/best_model.pth'
+                savepath = str(checkpoints_dir) + '/best_model' + str(epoch) + '_' +str(mIoU)[:5] +'.pth'
+                if args.anchor_type == 'learn':
+                    np.save(str(checkpoints_dir) + '/best_anchor' + str(epoch) + '.npy', anchors_np)
                 log_string('Saving at %s' % savepath)
                 state = {
                     'epoch': epoch,
